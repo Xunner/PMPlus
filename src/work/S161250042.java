@@ -2,10 +2,10 @@ package work;
 
 import bottom.BottomMonitor;
 import bottom.BottomService;
+import bottom.Constant;
 import bottom.Task;
 import main.Schedule;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -81,7 +81,7 @@ public class S161250042 extends Schedule {
 	@Override
 	public void ProcessSchedule(Task[] arrivedTask, int[] cpuOperate) {
 		// 将任务按所需时间升序排序
-		Arrays.sort(arrivedTask, Comparator.comparingInt(o -> o.cpuTime));
+//		Arrays.sort(arrivedTask, Comparator.comparingInt(o -> o.cpuTime));
 		// 记录新到任务
 		int index = this.readInt(FIRST_PCB_START_ADDRESS);
 		int before = 0;
@@ -119,6 +119,18 @@ public class S161250042 extends Schedule {
 //			this.printTaskQueue();
 //		}
 
+//		index = this.readInt(FIRST_PCB_START_ADDRESS);
+//		System.out.print(this.getTimeTick() + ": ");
+//		System.out.print("arrive={ ");
+//		for(Task task : arrivedTask){
+//			System.out.print(task.tid + " ");
+//		}
+//		System.out.print("}, before={ ");
+//		while (index != 0) {
+//			System.out.print(this.readInt(index + PCB_OFFSET_ID) + "(" + this.readInt(index + PCB_OFFSET_LEFT_TIME) + ")" + " ");
+//			index = this.readInt(index + PCB_OFFSET_NEXT_INDEX);
+//		}
+
 		// 扫描链表制定CPU策略
 		// 释放所有资源
 		for (int i = 0; i < 128; i++) {
@@ -149,6 +161,14 @@ public class S161250042 extends Schedule {
 				i++;
 			}
 		}
+
+//		index = this.readInt(FIRST_PCB_START_ADDRESS);
+//		System.out.print("}, after={ ");
+//		while (index != 0) {
+//			System.out.print(this.readInt(index + PCB_OFFSET_ID) + "(" + this.readInt(index + PCB_OFFSET_LEFT_TIME) + ")" + " ");
+//			index = this.readInt(index + PCB_OFFSET_NEXT_INDEX);
+//		}
+//		System.out.println("}");
 	}
 
 	private void printTaskQueue() {
@@ -200,6 +220,9 @@ public class S161250042 extends Schedule {
 			ret = NEW_PCB_START_ADDRESS + INT_SIZE;
 			this.writeInt(NEW_PCB_START_ADDRESS, ret);
 			this.writeInt(FIRST_PCB_START_ADDRESS, ret);
+		} else if (ret > Constant.FREE_MEM_SIZE) {
+			ret = NEW_PCB_START_ADDRESS + INT_SIZE + 50;
+			this.writeInt(NEW_PCB_START_ADDRESS, ret);
 		}
 		return ret;
 	}
@@ -220,7 +243,8 @@ public class S161250042 extends Schedule {
 		// 更新下一个待添加PCB的起始地址
 		this.writeInt(NEW_PCB_START_ADDRESS, index + PCB_OFFSET_RESOURCE_ID + toWrite.resource.length * INT_SIZE);
 		// 检查等待队列是否已空，若空则标记新添加的任务为头节点
-		if (this.readInt(FIRST_PCB_START_ADDRESS) == 0) {
+		int firstP = this.readInt(FIRST_PCB_START_ADDRESS);
+		if (firstP == 0 || firstP == nextTaskIndex) {
 			this.writeInt(FIRST_PCB_START_ADDRESS, index);
 		}
 	}
@@ -272,7 +296,7 @@ public class S161250042 extends Schedule {
 			Schedule schedule = new S161250042();
 			schedule.setBottomService(bottomService);
 			//外部调用实现类
-			for (int i = 0; i < 1000; i++) {
+			for (int i = 0; i < Constant.ITER_NUM; i++) {
 				Task[] tasks = bottomMonitor.getTaskArrived();
 				int[] cpuOperate = new int[cpuNumber];
 				schedule.ProcessSchedule(tasks, cpuOperate);
@@ -280,6 +304,7 @@ public class S161250042 extends Schedule {
 				bottomMonitor.increment();
 			}
 			//打印统计结果
+			System.out.print("Task " + n + " ");
 			bottomMonitor.printStatistics();
 			System.out.println();
 //			//打印任务队列
@@ -295,9 +320,9 @@ public class S161250042 extends Schedule {
 	 * 里面的内容可随意修改
 	 * 你可以在这里进行对自己的策略进行测试，如果不喜欢这种测试方式，可以直接删除main函数
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		// 定义cpu的数量
-		int cpuNumber = 2;
+		int cpuNumber = 4;
 		try {
 			test10Rounds(cpuNumber);
 		} catch (Exception e) {
